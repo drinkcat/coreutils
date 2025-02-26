@@ -470,15 +470,18 @@ fn format_float_hexadecimal(
     } else {
         let bits = f.to_bits();
         let exponent_bits = ((bits >> 52) & 0x7fff) as i64;
-        let exponent = exponent_bits - 1023;
-        let mantissa = bits & 0xf_ffff_ffff_ffff;
-        (1, mantissa, exponent)
+        // We want the first digit to be as large as possible (between 0x8 and 0xf), so we steal the top
+        // 3 bits from the mantissa.
+        let exponent = (exponent_bits - 1023) - 3;
+        let mantissa = (bits & 0x1_ffff_ffff_ffff) << 3;
+        let first_digit = 0x8 + ((bits & 0xe_0000_0000_0000) >> 25);
+        (first_digit, mantissa, exponent)
     };
 
     let mut s = match (precision, force_decimal) {
         (0, ForceDecimal::No) => format!("0x{first_digit}p{exponent:+x}"),
         (0, ForceDecimal::Yes) => format!("0x{first_digit}.p{exponent:+x}"),
-        _ => format!("0x{first_digit}.{mantissa:0>13x}p{exponent:+}"),
+        _ => format!("0x{first_digit:x}.{mantissa:0>13x}p{exponent:+}"),
     };
 
     if case == Case::Uppercase {
