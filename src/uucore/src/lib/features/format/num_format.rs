@@ -293,13 +293,7 @@ impl Formatter for Float {
 
         let precision = match precision {
             Some(CanAsterisk::Fixed(x)) => x,
-            None => {
-                if matches!(variant, FloatVariant::Shortest) {
-                    6
-                } else {
-                    0
-                }
-            }
+            None => 6,
             Some(CanAsterisk::Asterisk) => return Err(FormatError::WrongSpecType),
         };
 
