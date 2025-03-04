@@ -512,8 +512,7 @@ jobs:
           # - { os: ubuntu-latest  , target: x86_64-unknown-linux-gnu    , features: feat_selinux           , use-cross: use-cross }
           - { os: ubuntu-latest  , target: i686-unknown-linux-gnu      , features: "feat_os_unix,test_risky_names", use-cross: use-cross }
           - { os: ubuntu-latest  , target: i686-unknown-linux-musl     , features: feat_os_unix_musl      , use-cross: use-cross }
-          - { os: ubuntu-latest  , target: x86_64-unknown-linux-gnu    , features: "feat_os_unix,test_risky_names", use-cross: use-cross }
-          - { os: ubuntu-latest  , target: x86_64-unknown-linux-gnu    , features: "feat_os_unix"         , use-cross: no, workspace-tests: true }
+          - { os: ubuntu-latest  , target: x86_64-unknown-linux-gnu    , features: "feat_os_unix,test_risky_names", use-cross: use-cross, workspace-tests: true }
           - { os: ubuntu-latest  , target: x86_64-unknown-linux-musl   , features: feat_os_unix_musl      , use-cross: use-cross }
           - { os: ubuntu-latest  , target: x86_64-unknown-redox        , features: feat_os_unix_redox     , use-cross: redoxer , skip-tests: true }
           - { os: macos-latest   , target: aarch64-apple-darwin        , features: feat_os_macos } # M1 CPU
@@ -615,11 +614,9 @@ jobs:
         CARGO_CMD='cross'
         CARGO_CMD_OPTIONS='+${{ env.RUST_MIN_SRV }}'
         # Added suffix for artifacts, needed when multiple jobs use the same target.
-        ARTIFACTS_SUFFIX=''
         case '${{ matrix.job.use-cross }}' in
           ''|0|f|false|n|no)
             CARGO_CMD='cargo'
-            ARTIFACTS_SUFFIX='-nocross'
             ;;
           redoxer)
             CARGO_CMD='redoxer'
@@ -628,22 +625,15 @@ jobs:
         esac
         outputs CARGO_CMD
         outputs CARGO_CMD_OPTIONS
-        outputs ARTIFACTS_SUFFIX
         CARGO_TEST_OPTIONS=''
         case '${{ matrix.job.workspace-tests }}' in
           1|t|true|y|yes)
             # This also runs tests in other packages in the source directory (e.g. uucore).
-            # We cannot enable this everywhere as some platforms are currently broken, and
-            # we cannot use `cross` as its Docker image is ancient (Ubuntu 16.04) and is
-            # missing required system dependencies (e.g. recent libclang-dev).
+            # We cannot enable this everywhere as some platforms are currently broken.
             CARGO_TEST_OPTIONS='--workspace'
             ;;
         esac
         outputs CARGO_TEST_OPTIONS
-        # ** pass needed environment into `cross` container (iff `cross` not already configured via "Cross.toml")
-        if [ "${CARGO_CMD}" = 'cross' ] && [ ! -e "Cross.toml" ] ; then
-          printf "[build.env]\npassthrough = [\"CI\", \"RUST_BACKTRACE\", \"CARGO_TERM_COLOR\"]\n" > Cross.toml
-        fi
         # * executable for `strip`?
         STRIP="strip"
         case ${{ matrix.job.target }} in
@@ -655,7 +645,7 @@ jobs:
     - uses: taiki-e/install-action@v2
       if: steps.vars.outputs.CARGO_CMD == 'cross'
       with:
-        tool: cross@0.2.5
+        tool: cross@main
     - name: Create all needed build/work directories
       shell: bash
       run: |
@@ -668,14 +658,6 @@ jobs:
       run: |
         ## Install/setup prerequisites
         case '${{ matrix.job.target }}' in
-          arm-unknown-linux-gnueabihf)
-            sudo apt-get -y update
-            sudo apt-get -y install gcc-arm-linux-gnueabihf
-          ;;
-          aarch64-unknown-linux-*)
-            sudo apt-get -y update
-            sudo apt-get -y install gcc-aarch64-linux-gnu
-          ;;
           *-redox*)
             sudo apt-get -y update
             sudo apt-get -y install fuse3 libfuse-dev
@@ -688,24 +670,6 @@ jobs:
         esac
         case '${{ matrix.job.os }}' in
           macos-latest) brew install coreutils ;; # needed for testing
-        esac
-        case '${{ matrix.job.os }}' in
-          ubuntu-*)
-            # selinux headers needed to build tests
-            sudo apt-get -y update
-            sudo apt-get -y install libselinux1-dev
-            # pinky is a tool to show logged-in users from utmp, and gecos fields from /etc/passwd.
-            # In GitHub Action *nix VMs, no accounts log in, even the "runner" account that runs the commands. The account also has empty gecos fields.
-            # To work around this for pinky tests, we create a fake login entry for the GH runner account...
-            FAKE_UTMP='[7] [999999] [tty2] [runner] [tty2] [] [0.0.0.0] [2022-02-22T22:22:22,222222+00:00]'
-            # ... by dumping the login records, adding our fake line, then reverse dumping ...
-            (utmpdump /var/run/utmp ; echo $FAKE_UTMP) | sudo utmpdump -r -o /var/run/utmp
-            # ... and add a full name to each account with a gecos field but no full name.
-            sudo sed -i 's/:,/:runner name,/' /etc/passwd
-            # We also create a couple optional files pinky looks for
-            touch /home/runner/.project
-            echo "foo" > /home/runner/.plan
-            ;;
         esac
     - uses: taiki-e/install-action@v2
       if: steps.vars.outputs.CARGO_CMD == 'redoxer'
@@ -772,7 +736,7 @@ jobs:
     - name: Archive executable artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.PROJECT_NAME }}-${{ matrix.job.target }}${{ steps.vars.outputs.ARTIFACTS_SUFFIX }}
+        name: ${{ env.PROJECT_NAME }}-${{ matrix.job.target }}
         path: target/${{ matrix.job.target }}/release/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}
     - name: Package
       shell: bash

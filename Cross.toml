@@ -1,0 +1,7 @@
+[build]
+pre-build = [
+    "dpkg --add-architecture $CROSS_DEB_ARCH",
+    "apt-get update && apt-get --assume-yes install libselinux1-dev:$CROSS_DEB_ARCH"
+]
+[build.env]
+passthrough = ["CI", "RUST_BACKTRACE", "CARGO_TERM_COLOR"]
