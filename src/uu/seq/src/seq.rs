@@ -284,8 +284,28 @@ fn ebd_to_biguint(ebd: &ExtendedBigDecimal) -> Option<BigUint> {
     }
 }
 
-fn inc(val: &mut [u8], start: usize, end: usize) -> bool {
+fn inc(val: &mut [u8], start: usize, end: usize, inc: &[u8]) -> bool {
     let mut pos = end - 1;
+    let mut inc_pos = inc.len() - 1;
+    let mut carry = 0u8;
+    loop {
+        let mut newval = (*val)[pos] + (*inc)[inc_pos] - '0' as u8 + carry;
+        if newval > '9' as u8 {
+            carry = 1;
+            newval -= 10;
+        } else {
+            carry = 0;
+        }
+        (*val)[pos] = newval;
+
+        if inc_pos == 0 {
+            break;
+        }
+        inc_pos -= 1;
+    }
+    if carry == 0 {
+        return false;
+    }
     loop {
         if pos < start {
             (*val)[pos] = '1' as u8;
@@ -317,29 +337,42 @@ fn print_seq_fast(
     let loop_cnt = ((last - first) / increment).to_u64().unwrap();
     let mut i = 0u64;
 
+    // Nothing to print, bail out.
     if loop_cnt == 0 {
         return Ok(());
     }
 
+    // Format and print the first digit.
     let first_str = first.to_string();
     stdout.write_all(first_str.as_bytes())?;
 
-    let mut str = [0; 128];
-    let str = str.as_mut();
-    let end = str.len();
+    // Allocate a large buffer, that contains a preformatted string
+    // of the `separator` followed by the number.
+    // | ... head space ... | separator | number |
+    // ^0                   ^ start     ^ pos    ^ end (==buf.len())
+    // We keep track of 2 indices in this buffer: start and pos.
+    // We always print value between start and end.
+    let mut buf = [0; 128];
+    let buf = buf.as_mut();
+    let end = buf.len();
     let mut pos = end - first_str.as_bytes().len();
-    str[pos..end].copy_from_slice(first_str.as_bytes());
+    buf[pos..end].copy_from_slice(first_str.as_bytes());
     let mut start = pos - separator.as_bytes().len();
-    str[start..pos].copy_from_slice(separator.as_bytes());
+    buf[start..pos].copy_from_slice(separator.as_bytes());
+
+    let inc_str = increment.to_string();
+    let inc_str = inc_str.as_bytes();
     i += 1;
     while i < loop_cnt {
-        if inc(str, pos, end) {
+        if inc(buf, pos, end, inc_str) {
+            // Number overflowed, move the position to the right.
             pos -= 1;
+            // Move the separator.
             start -= 1;
-            str[start..pos].copy_from_slice(separator.as_bytes());
+            buf[start..pos].copy_from_slice(separator.as_bytes());
         }
         i += 1;
-        stdout.write_all(&str[start..end])?;
+        stdout.write_all(&buf[start..end])?;
     }
     write!(stdout, "{terminator}")?;
     stdout.flush()?;
@@ -358,19 +391,20 @@ fn print_seq(
     let (first, increment, last) = range;
     let mut value = first;
 
-    let mut is_first_iteration = true;
+    if done_printing(&value, &increment, &last) {
+        return Ok(());
+    }
+
+    format.fmt(&mut stdout, &value)?;
+    value = value + increment.clone();
+
     while !done_printing(&value, &increment, &last) {
-        if !is_first_iteration {
-            stdout.write_all(separator.as_bytes())?;
-        }
+        stdout.write_all(separator.as_bytes())?;
         format.fmt(&mut stdout, &value)?;
         // TODO Implement augmenting addition.
         value = value + increment.clone();
-        is_first_iteration = false;
     }
-    if !is_first_iteration {
-        write!(stdout, "{terminator}")?;
-    }
+    write!(stdout, "{terminator}")?;
     stdout.flush()?;
     Ok(())
 }
