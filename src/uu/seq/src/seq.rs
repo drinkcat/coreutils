@@ -284,16 +284,22 @@ fn ebd_to_biguint(ebd: &ExtendedBigDecimal) -> Option<BigUint> {
     }
 }
 
-fn inc(val: &mut [u8], pos: usize) -> bool {
-    if (*val)[pos] == '9' as u8 {
-        (*val)[pos] = '0' as u8;
-        inc(val, pos - 1)
-    } else if (*val)[pos] == 0 as u8 {
-        (*val)[pos] = '1' as u8;
-        true
-    } else {
-        (*val)[pos] += 1;
-        false
+fn inc(val: &mut [u8], start: usize, end: usize) -> bool {
+    let mut pos = end - 1;
+    loop {
+        if pos < start {
+            (*val)[pos] = '1' as u8;
+            return true;
+        }
+
+        if (*val)[pos] == '9' as u8 {
+            (*val)[pos] = '0' as u8;
+        } else {
+            (*val)[pos] += 1;
+            return false;
+        }
+
+        pos -= 1;
     }
 }
 
@@ -315,19 +321,25 @@ fn print_seq_fast(
         return Ok(());
     }
 
+    let first_str = first.to_string();
+    stdout.write_all(first_str.as_bytes())?;
+
     let mut str = [0; 128];
     let str = str.as_mut();
     let end = str.len();
-    let mut pos = end - 1;
-    stdout.write_all(first.to_string().as_bytes())?;
+    let mut pos = end - first_str.as_bytes().len();
+    str[pos..end].copy_from_slice(first_str.as_bytes());
+    let mut start = pos - separator.as_bytes().len();
+    str[start..pos].copy_from_slice(separator.as_bytes());
     i += 1;
     while i < loop_cnt {
-        if inc(str, end - 1) {
+        if inc(str, pos, end) {
             pos -= 1;
+            start -= 1;
+            str[start..pos].copy_from_slice(separator.as_bytes());
         }
         i += 1;
-        stdout.write_all(separator.as_bytes())?;
-        stdout.write_all(&str[pos..end])?;
+        stdout.write_all(&str[start..end])?;
     }
     write!(stdout, "{terminator}")?;
     stdout.flush()?;
