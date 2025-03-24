@@ -7,6 +7,8 @@ use std::ffi::OsString;
 use std::io::{stdout, BufWriter, ErrorKind, Write};
 
 use clap::{Arg, ArgAction, Command};
+use num_bigint::{BigInt, BigUint};
+use num_traits::ToPrimitive;
 use num_traits::Zero;
 
 use uucore::error::{FromIo, UResult};
@@ -143,51 +145,75 @@ pub fn uumain(args: impl uucore::Args) -> UResult<()> {
 
     let precision = select_precision(first_precision, increment_precision, last_precision);
 
-    // If a format was passed on the command line, use that.
-    // If not, use some default format based on parameters precision.
-    let format = match options.format {
-        Some(str) => Format::<num_format::Float, &ExtendedBigDecimal>::parse(str)?,
-        None => {
-            let padding = if options.equal_width {
-                let precision_value = precision.unwrap_or(0);
-                first
-                    .num_integral_digits
-                    .max(increment.num_integral_digits)
-                    .max(last.num_integral_digits)
-                    + if precision_value > 0 {
-                        precision_value + 1
-                    } else {
-                        0
-                    }
-            } else {
-                0
-            };
-
-            let formatter = match precision {
-                // format with precision: decimal floats and integers
-                Some(precision) => num_format::Float {
-                    variant: FloatVariant::Decimal,
-                    width: padding,
-                    alignment: num_format::NumberAlignment::RightZero,
-                    precision,
-                    ..Default::default()
-                },
-                // format without precision: hexadecimal floats
-                None => num_format::Float {
-                    variant: FloatVariant::Shortest,
-                    ..Default::default()
-                },
-            };
-            Format::from_formatter(formatter)
-        }
-    };
-
-    let result = print_seq(
-        (first.number, increment.number, last.number),
-        &options.separator,
-        &options.terminator,
-        &format,
+    let (first_bi, increment_bi, last_bi) = (
+        ebd_to_biguint(&first.number),
+        ebd_to_biguint(&increment.number),
+        ebd_to_biguint(&last.number),
     );
+
+    // Fast print intercept for integers
+    let result = if options.format.is_none()
+        && !options.equal_width
+        && precision == Some(0)
+        && first_bi.is_some()
+        && increment_bi.is_some()
+        && last_bi.is_some()
+        && *increment_bi.as_ref().unwrap() < 100u32.into()
+    {
+        print_seq_fast(
+            &first_bi.unwrap(),
+            increment_bi.unwrap().to_u64().unwrap(),
+            &last_bi.unwrap(),
+            &options.separator,
+            &options.terminator,
+        )
+    } else {
+        // If a format was passed on the command line, use that.
+        // If not, use some default format based on parameters precision.
+        let format = match options.format {
+            Some(str) => Format::<num_format::Float, &ExtendedBigDecimal>::parse(str)?,
+            None => {
+                let padding = if options.equal_width {
+                    let precision_value = precision.unwrap_or(0);
+                    first
+                        .num_integral_digits
+                        .max(increment.num_integral_digits)
+                        .max(last.num_integral_digits)
+                        + if precision_value > 0 {
+                            precision_value + 1
+                        } else {
+                            0
+                        }
+                } else {
+                    0
+                };
+
+                let formatter = match precision {
+                    // format with precision: decimal floats and integers
+                    Some(precision) => num_format::Float {
+                        variant: FloatVariant::Decimal,
+                        width: padding,
+                        alignment: num_format::NumberAlignment::RightZero,
+                        precision,
+                        ..Default::default()
+                    },
+                    // format without precision: hexadecimal floats
+                    None => num_format::Float {
+                        variant: FloatVariant::Shortest,
+                        ..Default::default()
+                    },
+                };
+                Format::from_formatter(formatter)
+            }
+        };
+
+        print_seq(
+            (first.number, increment.number, last.number),
+            &options.separator,
+            &options.terminator,
+            &format,
+        )
+    };
     match result {
         Ok(()) => Ok(()),
         Err(err) if err.kind() == ErrorKind::BrokenPipe => Ok(()),
@@ -245,6 +271,67 @@ fn done_printing<T: Zero + PartialOrd>(next: &T, increment: &T, last: &T) -> boo
     }
 }
 
+fn ebd_to_biguint(ebd: &ExtendedBigDecimal) -> Option<BigUint> {
+    match ebd {
+        ExtendedBigDecimal::BigDecimal(big_decimal) => {
+            let (bi, scale) = big_decimal.as_bigint_and_scale();
+            if scale != 0 {
+                return None;
+            };
+            bi.to_biguint()
+        }
+        _ => None,
+    }
+}
+
+/// Integer print, default format, fast code path
+fn print_seq_fast(
+    first: &BigUint,
+    increment: u64,
+    last: &BigUint,
+    separator: &str,
+    terminator: &str,
+) -> std::io::Result<()> {
+    const FACTOR: u64 = 10000u64;
+
+    let stdout = stdout().lock();
+    let mut stdout = BufWriter::new(stdout);
+    let mut value_right = (first % 1000u64).to_u64().unwrap();
+    let mut value_left = first - value_right;
+    let mut str_left = format!("{}", value_left.clone() / FACTOR);
+    let mut value_right_bound = (last - value_left.clone())
+        .min(FACTOR.into())
+        .to_u64()
+        .unwrap();
+
+    let mut is_first_iteration = true;
+    while value_right <= value_right_bound {
+        if !is_first_iteration {
+            stdout.write_all(separator.as_bytes())?;
+        }
+        stdout.write_all(str_left.as_bytes())?;
+        stdout.write_all(value_right.to_string().as_bytes())?;
+        // TODO Implement augmenting addition.
+        value_right = value_right + increment;
+        if value_right >= FACTOR {
+            let rem = value_right - value_right % FACTOR;
+            value_right -= rem;
+            value_left += rem;
+            str_left = (value_left.clone() / FACTOR).to_string();
+            value_right_bound = (last - value_left.clone())
+                .min(FACTOR.into())
+                .to_u64()
+                .unwrap();
+        }
+        is_first_iteration = false;
+    }
+    if !is_first_iteration {
+        write!(stdout, "{terminator}")?;
+    }
+    stdout.flush()?;
+    Ok(())
+}
+
 /// Floating point based code path
 fn print_seq(
     range: RangeFloat,
@@ -260,7 +347,7 @@ fn print_seq(
     let mut is_first_iteration = true;
     while !done_printing(&value, &increment, &last) {
         if !is_first_iteration {
-            write!(stdout, "{separator}")?;
+            stdout.write_all(separator.as_bytes())?;
         }
         format.fmt(&mut stdout, &value)?;
         // TODO Implement augmenting addition.

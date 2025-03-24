@@ -112,13 +112,7 @@ impl ExtendedBigDecimal {
 impl Display for ExtendedBigDecimal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::BigDecimal(x) => {
-                let (n, p) = x.as_bigint_and_exponent();
-                match p {
-                    0 => Self::BigDecimal(BigDecimal::new(n * 10, 1)).fmt(f),
-                    _ => x.fmt(f),
-                }
-            }
+            Self::BigDecimal(x) => x.fmt(f),
             Self::Infinity => f32::INFINITY.fmt(f),
             Self::MinusInfinity => f32::NEG_INFINITY.fmt(f),
             Self::MinusZero => (-0.0f32).fmt(f),
