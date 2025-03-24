@@ -284,6 +284,19 @@ fn ebd_to_biguint(ebd: &ExtendedBigDecimal) -> Option<BigUint> {
     }
 }
 
+fn inc(val: &mut [u8], pos: usize) -> bool {
+    if (*val)[pos] == '9' as u8 {
+        (*val)[pos] = '0' as u8;
+        inc(val, pos - 1)
+    } else if (*val)[pos] == 0 as u8 {
+        (*val)[pos] = '1' as u8;
+        true
+    } else {
+        (*val)[pos] += 1;
+        false
+    }
+}
+
 /// Integer print, default format, fast code path
 fn print_seq_fast(
     first: &BigUint,
@@ -292,42 +305,31 @@ fn print_seq_fast(
     separator: &str,
     terminator: &str,
 ) -> std::io::Result<()> {
-    const FACTOR: u64 = 10000u64;
-
     let stdout = stdout().lock();
     let mut stdout = BufWriter::new(stdout);
-    let mut value_right = (first % 1000u64).to_u64().unwrap();
-    let mut value_left = first - value_right;
-    let mut str_left = format!("{}", value_left.clone() / FACTOR);
-    let mut value_right_bound = (last - value_left.clone())
-        .min(FACTOR.into())
-        .to_u64()
-        .unwrap();
 
-    let mut is_first_iteration = true;
-    while value_right <= value_right_bound {
-        if !is_first_iteration {
-            stdout.write_all(separator.as_bytes())?;
-        }
-        stdout.write_all(str_left.as_bytes())?;
-        stdout.write_all(value_right.to_string().as_bytes())?;
-        // TODO Implement augmenting addition.
-        value_right = value_right + increment;
-        if value_right >= FACTOR {
-            let rem = value_right - value_right % FACTOR;
-            value_right -= rem;
-            value_left += rem;
-            str_left = (value_left.clone() / FACTOR).to_string();
-            value_right_bound = (last - value_left.clone())
-                .min(FACTOR.into())
-                .to_u64()
-                .unwrap();
-        }
-        is_first_iteration = false;
+    let loop_cnt = ((last - first) / increment).to_u64().unwrap();
+    let mut i = 0u64;
+
+    if loop_cnt == 0 {
+        return Ok(());
     }
-    if !is_first_iteration {
-        write!(stdout, "{terminator}")?;
+
+    let mut str = [0; 128];
+    let str = str.as_mut();
+    let end = str.len();
+    let mut pos = end - 1;
+    stdout.write_all(first.to_string().as_bytes())?;
+    i += 1;
+    while i < loop_cnt {
+        if inc(str, end - 1) {
+            pos -= 1;
+        }
+        i += 1;
+        stdout.write_all(separator.as_bytes())?;
+        stdout.write_all(&str[pos..end])?;
     }
+    write!(stdout, "{terminator}")?;
     stdout.flush()?;
     Ok(())
 }
