@@ -6,7 +6,7 @@
 // spell-checker:ignore funcs
 
 use array_init::array_init;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 
 fn table(c: &mut Criterion) {
     #[cfg(target_os = "linux")]
