@@ -33,8 +33,68 @@ mod splice;
 const USAGE: &str = help_usage!("cat.md");
 const ABOUT: &str = help_about!("cat.md");
 
+/// Fast code path increment function.
+///
+/// Add inc to the string val[start..end]. This operates on ASCII digits, assuming
+/// val and inc are well formed.
+///
+/// Returns the new value for start (can be less that the original value if we
+/// have a carry or if inc > start).
+///
+/// We also assume that there is enough space in val to expand if start needs
+/// to be updated.
+#[inline]
+fn fast_inc(val: &mut [u8], start: usize, end: usize, inc: &[u8]) -> usize {
+    // To avoid a lot of casts to signed integers, we make sure to decrement pos
+    // as late as possible, so that it does not ever go negative.
+    let mut pos = end;
+    let mut carry = 0u8;
+
+    // First loop, add all digits of inc into val.
+    for inc_pos in (0..inc.len()).rev() {
+        pos -= 1;
+
+        let mut new_val = inc[inc_pos] + carry;
+        // Be careful here, only add existing digit of val.
+        if pos >= start {
+            new_val += val[pos] - b'0';
+        }
+        if new_val > b'9' {
+            carry = 1;
+            new_val -= 10;
+        } else {
+            carry = 0;
+        }
+        val[pos] = new_val;
+    }
+
+    // Done, now, if we have a carry, add that to the upper digits of val.
+    if carry == 0 {
+        return start.min(pos);
+    }
+    while pos > start {
+        pos -= 1;
+
+        if val[pos] == b'9' {
+            // 9+1 = 10. Carry propagating, keep going.
+            val[pos] = b'0';
+        } else {
+            // Carry stopped propagating, return unchanged start.
+            val[pos] += 1;
+            return start;
+        }
+    }
+
+    // The carry propagated so far that a new digit was added.
+    val[start - 1] = b'1';
+    start - 1
+}
+
 struct LineNumber {
     buf: Vec<u8>,
+    print_start: usize,
+    start: usize,
+    num_end: usize,
 }
 
 // Logic to store a string for the line number. Manually incrementing the value
@@ -46,48 +106,31 @@ struct LineNumber {
 // prepended and the counting continues.
 impl LineNumber {
     fn new() -> Self {
+        let size = 1024;
+        let mut buf = vec![b'0'; size];
+
+        let init_str = "     1\t";
+        let print_start = buf.len() - init_str.len();
+        let start = buf.len() - 2;
+        let num_end = buf.len() - 1;
+
+        buf[print_start..].copy_from_slice(init_str.as_bytes());
+
         LineNumber {
-            // Initialize buf to b"     1\t"
-            buf: Vec::from(b"     1\t"),
+            buf,
+            print_start,
+            start,
+            num_end,
         }
     }
 
     fn increment(&mut self) {
-        // skip(1) to avoid the \t in the last byte.
-        for ascii_digit in self.buf.iter_mut().rev().skip(1) {
-            // Working from the least-significant digit, increment the number in the buffer.
-            // If we hit anything other than a b'9' we can break since the next digit is
-            // unaffected.
-            // Also note that if we hit a b' ', we can think of that as a 0 and increment to b'1'.
-            // If/else here is faster than match (as measured with some benchmarking Apr-2025),
-            // probably since we can prioritize most likely digits first.
-            if (b'0'..=b'8').contains(ascii_digit) {
-                *ascii_digit += 1;
-                break;
-            } else if b'9' == *ascii_digit {
-                *ascii_digit = b'0';
-            } else {
-                assert_eq!(*ascii_digit, b' ');
-                *ascii_digit = b'1';
-                break;
-            }
-        }
-        if self.buf[0] == b'0' {
-            // This implies we've overflowed. In this case the buffer will be
-            // [b'0', b'0', ..., b'0', b'\t'].
-            // For debugging, the following logic would assert that to be the case.
-            // assert_eq!(*self.buf.last().unwrap(), b'\t');
-            // for ascii_digit in self.buf.iter_mut().rev().skip(1) {
-            //     assert_eq!(*ascii_digit, b'0');
-            // }
-
-            // All we need to do is prepend a b'1' and we're good.
-            self.buf.insert(0, b'1');
-        }
+        self.start = fast_inc(self.buf.as_mut_slice(), self.start, self.num_end, &[b'1']);
+        self.print_start = self.print_start.min(self.start);
     }
 
     fn write(&self, writer: &mut impl Write) -> std::io::Result<()> {
-        writer.write_all(&self.buf)
+        writer.write_all(&self.buf[self.print_start..])
     }
 }
 
