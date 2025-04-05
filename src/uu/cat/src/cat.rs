@@ -44,34 +44,20 @@ const ABOUT: &str = help_about!("cat.md");
 /// We also assume that there is enough space in val to expand if start needs
 /// to be updated.
 #[inline]
-fn fast_inc(val: &mut [u8], start: usize, end: usize, inc: &[u8]) -> usize {
+fn fast_inc_one(val: &mut [u8], start: usize, end: usize) -> usize {
     // To avoid a lot of casts to signed integers, we make sure to decrement pos
     // as late as possible, so that it does not ever go negative.
-    let mut pos = end;
-    let mut carry = 0u8;
+    let mut pos = end - 1;
 
-    // First loop, add all digits of inc into val.
-    for inc_pos in (0..inc.len()).rev() {
-        pos -= 1;
-
-        let mut new_val = inc[inc_pos] + carry;
-        // Be careful here, only add existing digit of val.
-        if pos >= start {
-            new_val += val[pos] - b'0';
-        }
-        if new_val > b'9' {
-            carry = 1;
-            new_val -= 10;
-        } else {
-            carry = 0;
-        }
-        val[pos] = new_val;
+    val[pos] = 1 + val[pos];
+    if val[pos] > b'9' {
+        val[pos] -= 10;
+    } else {
+        return start;
     }
 
-    // Done, now, if we have a carry, add that to the upper digits of val.
-    if carry == 0 {
-        return start.min(pos);
-    }
+    // We have a carry
+
     while pos > start {
         pos -= 1;
 
@@ -125,7 +111,7 @@ impl LineNumber {
     }
 
     fn increment(&mut self) {
-        self.start = fast_inc(self.buf.as_mut_slice(), self.start, self.num_end, &[b'1']);
+        self.start = fast_inc_one(self.buf.as_mut_slice(), self.start, self.num_end);
         self.print_start = self.print_start.min(self.start);
     }
 
