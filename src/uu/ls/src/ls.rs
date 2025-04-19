@@ -27,6 +27,7 @@ use std::{
 use std::{collections::HashSet, io::IsTerminal};
 
 use ansi_width::ansi_width;
+use chrono::format::{Item, StrftimeItems};
 use chrono::{DateTime, Local, TimeDelta};
 use clap::{
     Arg, ArgAction, Command,
@@ -273,32 +274,65 @@ enum TimeStyle {
     Format(String),
 }
 
-/// Whether the given date is considered recent (i.e., in the last 6 months).
-fn is_recent(time: DateTime<Local>) -> bool {
-    // According to GNU a Gregorian year has 365.2425 * 24 * 60 * 60 == 31556952 seconds on the average.
-    time + TimeDelta::try_seconds(31_556_952 / 2).unwrap() > Local::now()
+struct TimeStyler<'a> {
+    // TODO: Figure out how to get rid of fmt, there must be a way to initialize
+    // default to StrftimeItems::new(fmt) but I can't figure out lifetimes...
+    fmt: Option<String>,
+    default: Option<StrftimeItems<'a>>,
+    recent: Option<StrftimeItems<'a>>,
+    recent_time: Option<DateTime<Local>>,
 }
 
-impl TimeStyle {
-    /// Format the given time according to this time format style.
-    fn format(&self, time: DateTime<Local>) -> String {
-        let recent = is_recent(time);
-        match (self, recent) {
-            (Self::FullIso, _) => time.format("%Y-%m-%d %H:%M:%S.%f %z").to_string(),
-            (Self::LongIso, _) => time.format("%Y-%m-%d %H:%M").to_string(),
-            (Self::Iso, true) => time.format("%m-%d %H:%M").to_string(),
-            (Self::Iso, false) => time.format("%Y-%m-%d ").to_string(),
+impl<'a> TimeStyler<'a> {
+    fn new(style: &TimeStyle) -> TimeStyler<'a> {
+        let fmt = match style {
+            TimeStyle::Format(fmt) => Some(custom_tz_fmt::custom_time_format(&fmt)),
+            _ => None,
+        };
+        let default = match style {
+            TimeStyle::FullIso => Some(StrftimeItems::new("%Y-%m-%d %H:%M:%S.%f %z")),
+            TimeStyle::LongIso => Some(StrftimeItems::new("%Y-%m-%d %H:%M")),
+            TimeStyle::Iso => Some(StrftimeItems::new("%Y-%m-%d ")),
             // spell-checker:ignore (word) datetime
             //In this version of chrono translating can be done
             //The function is chrono::datetime::DateTime::format_localized
             //However it's currently still hard to get the current pure-rust-locale
             //So it's not yet implemented
-            (Self::Locale, true) => time.format("%b %e %H:%M").to_string(),
-            (Self::Locale, false) => time.format("%b %e  %Y").to_string(),
-            (Self::Format(fmt), _) => time
-                .format(custom_tz_fmt::custom_time_format(fmt).as_str())
-                .to_string(),
+            TimeStyle::Locale => Some(StrftimeItems::new("%b %e  %Y")),
+            TimeStyle::Format(_) => None,
+        };
+        let recent = match style {
+            TimeStyle::Iso => Some(StrftimeItems::new("%m-%d %H:%M")),
+            // See comment above about locale
+            TimeStyle::Locale => Some(StrftimeItems::new("%b %e %H:%M")),
+            _ => None,
+        };
+        let recent_time = if recent.is_some() {
+            Some(Local::now() - TimeDelta::try_seconds(31_556_952 / 2).unwrap())
+        } else {
+            None
+        };
+
+        TimeStyler {
+            fmt,
+            default,
+            recent,
+            recent_time,
         }
+    }
+
+    fn format(&self, time: DateTime<Local>) -> String {
+        if let Some(fmt) = &self.fmt {
+            return time.format_with_items(StrftimeItems::new(fmt)).to_string();
+        }
+
+        return if self.recent.is_none() || time <= self.recent_time.unwrap() {
+            time.format_with_items(self.default.clone().unwrap())
+                .to_string()
+        } else {
+            time.format_with_items(self.recent.clone().unwrap())
+                .to_string()
+        };
     }
 }
 
@@ -355,7 +389,7 @@ enum IndicatorStyle {
     Classify,
 }
 
-pub struct Config {
+pub struct Config<'a> {
     // Dir and vdir needs access to this field
     pub format: Format,
     files: Files,
@@ -379,7 +413,7 @@ pub struct Config {
     // Dir and vdir needs access to this field
     pub quoting_style: QuotingStyle,
     indicator_style: IndicatorStyle,
-    time_style: TimeStyle,
+    time_styler: TimeStyler<'a>,
     context: bool,
     selinux_supported: bool,
     group_directories_first: bool,
@@ -768,7 +802,7 @@ fn parse_width(width_match: Option<&String>) -> Result<u16, LsError> {
     Ok(ret)
 }
 
-impl Config {
+impl<'a> Config<'a> {
     #[allow(clippy::cognitive_complexity)]
     pub fn from(options: &clap::ArgMatches) -> UResult<Self> {
         let context = options.get_flag(options::CONTEXT);
@@ -1119,7 +1153,7 @@ impl Config {
             width,
             quoting_style,
             indicator_style,
-            time_style,
+            time_styler: TimeStyler::new(&time_style),
             context,
             selinux_supported: {
                 #[cfg(feature = "selinux")]
@@ -3106,7 +3140,7 @@ fn get_time(md: &Metadata, config: &Config) -> Option<DateTime<Local>> {
 
 fn display_date(metadata: &Metadata, config: &Config) -> String {
     match get_time(metadata, config) {
-        Some(time) => config.time_style.format(time),
+        Some(time) => config.time_styler.format(time),
         None => "???".into(),
     }
 }
