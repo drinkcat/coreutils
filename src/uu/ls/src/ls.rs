@@ -5,6 +5,7 @@
 
 // spell-checker:ignore (ToDO) somegroup nlink tabsize dired subdired dtype colorterm stringly
 
+use std::iter;
 #[cfg(windows)]
 use std::os::windows::fs::MetadataExt;
 use std::{cell::OnceCell, num::IntErrorKind};
@@ -2420,12 +2421,22 @@ fn display_dir_entry_size(
     }
 }
 
-fn pad_left(string: &str, count: usize) -> String {
-    format!("{string:>count$}")
+fn extend_pad_left(output: &mut Vec<u8>, string: &str, count: usize) {
+    if string.len() < count {
+        output.extend(iter::repeat_n(b' ', count - string.len()));
+    }
+    output.extend(string.as_bytes());
 }
 
-fn pad_right(string: &str, count: usize) -> String {
-    format!("{string:<count$}")
+fn extend_pad_right(output: &mut Vec<u8>, string: &str, count: usize) {
+    output.extend(string.as_bytes());
+    if string.len() < count {
+        output.extend(iter::repeat_n(b' ', count - string.len()));
+    }
+}
+
+fn pad_left(string: &str, count: usize) -> String {
+    format!("{string:>count$}")
 }
 
 fn return_total(
@@ -2784,61 +2795,73 @@ fn display_item_long(
             output_display.extend(b"+");
         }
         output_display.extend(b" ");
-        output_display.extend(pad_left(&display_symlink_count(md), padding.link_count).as_bytes());
+        extend_pad_left(
+            &mut output_display,
+            &display_symlink_count(md),
+            padding.link_count,
+        );
 
         if config.long.owner {
             output_display.extend(b" ");
-            output_display.extend(pad_right(&display_uname(md, config), padding.uname).as_bytes());
+            extend_pad_right(
+                &mut output_display,
+                &display_uname(md, config),
+                padding.uname,
+            );
         }
 
         if config.long.group {
             output_display.extend(b" ");
-            output_display.extend(pad_right(&display_group(md, config), padding.group).as_bytes());
+            extend_pad_right(
+                &mut output_display,
+                &display_group(md, config),
+                padding.group,
+            );
         }
 
         if config.context {
             output_display.extend(b" ");
-            output_display.extend(pad_right(&item.security_context, padding.context).as_bytes());
+            extend_pad_right(&mut output_display, &item.security_context, padding.context);
         }
 
         // Author is only different from owner on GNU/Hurd, so we reuse
         // the owner, since GNU/Hurd is not currently supported by Rust.
         if config.long.author {
             output_display.extend(b" ");
-            output_display.extend(pad_right(&display_uname(md, config), padding.uname).as_bytes());
+            extend_pad_right(
+                &mut output_display,
+                &display_uname(md, config),
+                padding.uname,
+            );
         }
 
         match display_len_or_rdev(md, config) {
             SizeOrDeviceId::Size(size) => {
                 output_display.extend(b" ");
-                output_display.extend(pad_left(&size, padding.size).as_bytes());
+                extend_pad_left(&mut output_display, &size, padding.size);
             }
             SizeOrDeviceId::Device(major, minor) => {
                 output_display.extend(b" ");
-                output_display.extend(
-                    pad_left(
-                        &major,
-                        #[cfg(not(unix))]
-                        0usize,
-                        #[cfg(unix)]
-                        padding.major.max(
-                            padding
-                                .size
-                                .saturating_sub(padding.minor.saturating_add(2usize)),
-                        ),
-                    )
-                    .as_bytes(),
+                extend_pad_left(
+                    &mut output_display,
+                    &major,
+                    #[cfg(not(unix))]
+                    0usize,
+                    #[cfg(unix)]
+                    padding.major.max(
+                        padding
+                            .size
+                            .saturating_sub(padding.minor.saturating_add(2usize)),
+                    ),
                 );
                 output_display.extend(b", ");
-                output_display.extend(
-                    pad_left(
-                        &minor,
-                        #[cfg(not(unix))]
-                        0usize,
-                        #[cfg(unix)]
-                        padding.minor,
-                    )
-                    .as_bytes(),
+                extend_pad_left(
+                    &mut output_display,
+                    &minor,
+                    #[cfg(not(unix))]
+                    0usize,
+                    #[cfg(unix)]
+                    padding.minor,
                 );
             }
         };
@@ -2919,28 +2942,28 @@ fn display_item_long(
             // but not other alternate access method.
             output_display.extend(b".");
         }
-        output_display.extend(pad_left("?", padding.link_count).as_bytes());
+        extend_pad_left(&mut output_display, "?", padding.link_count);
 
         if config.long.owner {
             output_display.extend(b" ");
-            output_display.extend(pad_right("?", padding.uname).as_bytes());
+            extend_pad_right(&mut output_display, "?", padding.uname);
         }
 
         if config.long.group {
             output_display.extend(b" ");
-            output_display.extend(pad_right("?", padding.group).as_bytes());
+            extend_pad_right(&mut output_display, "?", padding.group);
         }
 
         if config.context {
             output_display.extend(b" ");
-            output_display.extend(pad_right(&item.security_context, padding.context).as_bytes());
+            extend_pad_right(&mut output_display, &item.security_context, padding.context);
         }
 
         // Author is only different from owner on GNU/Hurd, so we reuse
         // the owner, since GNU/Hurd is not currently supported by Rust.
         if config.long.author {
             output_display.extend(b" ");
-            output_display.extend(pad_right("?", padding.uname).as_bytes());
+            extend_pad_right(&mut output_display, "?", padding.uname);
         }
 
         let displayed_item = display_item_name(
@@ -2955,9 +2978,9 @@ fn display_item_long(
         let date_len = 12;
 
         output_display.extend(b" ");
-        output_display.extend(pad_left("?", padding.size).as_bytes());
+        extend_pad_left(&mut output_display, "?", padding.size);
         output_display.extend(b" ");
-        output_display.extend(pad_left("?", date_len).as_bytes());
+        extend_pad_left(&mut output_display, "?", date_len);
         output_display.extend(b" ");
 
         if config.dired {
