@@ -286,7 +286,7 @@ struct TimeStyler<'a> {
 impl<'a> TimeStyler<'a> {
     fn new(style: &TimeStyle) -> TimeStyler<'a> {
         let fmt = match style {
-            TimeStyle::Format(fmt) => Some(custom_tz_fmt::custom_time_format(&fmt)),
+            TimeStyle::Format(fmt) => Some(custom_tz_fmt::custom_time_format(fmt)),
             _ => None,
         };
         let default = match style {
@@ -328,13 +328,13 @@ impl<'a> TimeStyler<'a> {
             return time.format_with_items(StrftimeItems::new(fmt)).to_string();
         }
 
-        return if self.recent.is_none() || time <= self.recent_time.unwrap() {
+        if self.recent.is_none() || time <= self.recent_time.unwrap() {
             time.format_with_items(self.default.as_ref().unwrap().iter())
                 .to_string()
         } else {
             time.format_with_items(self.recent.as_ref().unwrap().iter())
                 .to_string()
-        };
+        }
     }
 }
 
@@ -804,7 +804,7 @@ fn parse_width(width_match: Option<&String>) -> Result<u16, LsError> {
     Ok(ret)
 }
 
-impl<'a> Config<'a> {
+impl Config<'_> {
     #[allow(clippy::cognitive_complexity)]
     pub fn from(options: &clap::ArgMatches) -> UResult<Self> {
         let context = options.get_flag(options::CONTEXT);
