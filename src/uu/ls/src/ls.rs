@@ -278,8 +278,8 @@ struct TimeStyler<'a> {
     // TODO: Figure out how to get rid of fmt, there must be a way to initialize
     // default to StrftimeItems::new(fmt) but I can't figure out lifetimes...
     fmt: Option<String>,
-    default: Option<StrftimeItems<'a>>,
-    recent: Option<StrftimeItems<'a>>,
+    default: Option<Vec<Item<'a>>>,
+    recent: Option<Vec<Item<'a>>>,
     recent_time: Option<DateTime<Local>>,
 }
 
@@ -300,13 +300,15 @@ impl<'a> TimeStyler<'a> {
             //So it's not yet implemented
             TimeStyle::Locale => Some(StrftimeItems::new("%b %e  %Y")),
             TimeStyle::Format(_) => None,
-        };
+        }
+        .map(|x| x.collect());
         let recent = match style {
             TimeStyle::Iso => Some(StrftimeItems::new("%m-%d %H:%M")),
             // See comment above about locale
             TimeStyle::Locale => Some(StrftimeItems::new("%b %e %H:%M")),
             _ => None,
-        };
+        }
+        .map(|x| x.collect());
         let recent_time = if recent.is_some() {
             Some(Local::now() - TimeDelta::try_seconds(31_556_952 / 2).unwrap())
         } else {
@@ -327,10 +329,10 @@ impl<'a> TimeStyler<'a> {
         }
 
         return if self.recent.is_none() || time <= self.recent_time.unwrap() {
-            time.format_with_items(self.default.clone().unwrap())
+            time.format_with_items(self.default.as_ref().unwrap().iter())
                 .to_string()
         } else {
-            time.format_with_items(self.recent.clone().unwrap())
+            time.format_with_items(self.recent.as_ref().unwrap().iter())
                 .to_string()
         };
     }
