@@ -5,6 +5,7 @@
 
 // spell-checker:ignore (ToDO) somegroup nlink tabsize dired subdired dtype colorterm stringly nohash
 
+use std::io::IsTerminal;
 use std::iter;
 #[cfg(windows)]
 use std::os::windows::fs::MetadataExt;
@@ -24,7 +25,6 @@ use std::{
     os::unix::fs::{FileTypeExt, MetadataExt},
     time::Duration,
 };
-use std::{collections::HashSet, io::IsTerminal};
 
 use ansi_width::ansi_width;
 use chrono::format::{Item, StrftimeItems};
@@ -2195,8 +2195,11 @@ pub fn list(locs: Vec<&Path>, config: &Config) -> UResult<()> {
                 writeln!(state.out)?;
             }
         }
-        let mut listed_ancestors = HashSet::new();
-        listed_ancestors.insert(FileInformation::from_path(
+        // Keep a list of ancestors in a Vec: the depth is unlikely
+        // to get very large, and it's much easier to push and pop
+        // using such a data structure.
+        let mut listed_ancestors = Vec::new();
+        listed_ancestors.push(FileInformation::from_path(
             &path_data.p_buf,
             path_data.must_dereference,
         )?);
@@ -2324,7 +2327,7 @@ fn enter_directory(
     read_dir: ReadDir,
     config: &Config,
     state: &mut ListState,
-    listed_ancestors: &mut HashSet<FileInformation>,
+    listed_ancestors: &mut Vec<FileInformation>,
     dired: &mut DiredOutput,
 ) -> UResult<()> {
     // Create vec of entries with initial dot files
@@ -2400,9 +2403,9 @@ fn enter_directory(
                     continue;
                 }
                 Ok(rd) => {
-                    if listed_ancestors
-                        .insert(FileInformation::from_path(&e.p_buf, e.must_dereference)?)
-                    {
+                    let file_info = FileInformation::from_path(&e.p_buf, e.must_dereference)?;
+                    if !listed_ancestors.contains(&file_info) {
+                        listed_ancestors.push(file_info);
                         // when listing several directories in recursive mode, we show
                         // "dirname:" at the beginning of the file list
                         writeln!(state.out)?;
@@ -2421,8 +2424,7 @@ fn enter_directory(
                         show_dir_name(e, &mut state.out, config)?;
                         writeln!(state.out)?;
                         enter_directory(e, rd, config, state, listed_ancestors, dired)?;
-                        listed_ancestors
-                            .remove(&FileInformation::from_path(&e.p_buf, e.must_dereference)?);
+                        listed_ancestors.pop();
                     } else {
                         state.out.flush()?;
                         show!(LsError::AlreadyListedError(e.p_buf.clone()));
