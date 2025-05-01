@@ -269,6 +269,9 @@ license = "MIT"
 readme = "README.package.md"
 version = "0.0.30"
 
+[patch.crates-io]
+jiff = { git = "https://github.com/BurntSushi/jiff" }
+
 [workspace.dependencies]
 ansi-width = "0.1.0"
 bigdecimal = "0.4"
