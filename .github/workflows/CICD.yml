@@ -54,7 +54,7 @@ jobs:
         persist-credentials: false
     - uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: ${{ env.RUST_MIN_SRV }}
+        toolchain: ${{ env.RUST_MIN_SRV }}-x86_64-pc-windows-gnu
         targets: ${{ matrix.job.target }}
     - name: Initialize workflow variables
       id: vars
