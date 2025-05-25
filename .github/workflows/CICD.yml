@@ -207,8 +207,16 @@ jobs:
           ;;
           # Update binutils if MinGW due to https://github.com/rust-lang/rust/issues/112368
           x86_64-pc-windows-gnu)
+            which gcc || true
+            which gcc.exe || true
+            cat $GITHUB_PATH
             C:/msys64/usr/bin/pacman.exe -Sy --needed mingw-w64-x86_64-gcc --noconfirm
             echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
+            ls -l "C:\msys64\mingw64\bin"
+            echo $GITHUB_PATH
+            cat $GITHUB_PATH
+            which gcc || true
+            which gcc.exe || true
           ;;
         esac
         case '${{ matrix.job.os }}' in
