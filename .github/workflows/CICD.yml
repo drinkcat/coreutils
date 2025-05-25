@@ -72,9 +72,6 @@ jobs:
         # staging directory
         STAGING='_staging'
         outputs STAGING
-        # determine EXE suffix
-        EXE_suffix="" ; case '${{ matrix.job.target }}' in *-pc-windows-*) EXE_suffix=".exe" ;; esac;
-        outputs EXE_suffix
         # parse commit reference info
         echo GITHUB_REF=${GITHUB_REF}
         echo GITHUB_SHA=${GITHUB_SHA}
