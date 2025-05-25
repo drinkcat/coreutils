@@ -138,7 +138,7 @@ jobs:
         outputs CARGO_DEFAULT_FEATURES_OPTION
         # * CARGO_CMD
         CARGO_CMD='cross'
-        CARGO_CMD_OPTIONS='+${{ env.RUST_MIN_SRV }}'
+        CARGO_CMD_OPTIONS='+${{ env.RUST_MIN_SRV }}-x86_64-pc-windows-gnu'
         # Added suffix for artifacts, needed when multiple jobs use the same target.
         ARTIFACTS_SUFFIX=''
         case '${{ matrix.job.use-cross }}' in
