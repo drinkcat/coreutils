@@ -6,67 +6,57 @@ results, then `util/generate_why.py`.
 
 <!-- spell-checker: disable -->
 
+* tests/cp/cp-a-selinux
 * tests/cp/preserve-gid
 * tests/csplit/csplit-suppress-matched
-* tests/date/date-debug
-* tests/date/date-next-dow
-* tests/date/date-tz
 * tests/date/date
+* tests/date/date-debug
+* tests/date/date-tz
 * tests/dd/direct
 * tests/dd/no-allocate
 * tests/dd/nocache_eof
+* tests/dd/nocache_fail
 * tests/dd/skip-seek-past-file - https://github.com/uutils/coreutils/issues/7216
 * tests/dd/stderr
 * tests/du/long-from-unreadable - https://github.com/uutils/coreutils/issues/7217
-* tests/du/move-dir-while-traversing
 * tests/expr/expr-multibyte
-* tests/fmt/goal-option
 * tests/fmt/non-space
-* tests/head/head-elide-tail
-* tests/head/head-pos
-* tests/help/help-version-getopt
-* tests/help/help-version
-* tests/install/install-C - https://github.com/uutils/coreutils/pull/7215
+* tests/install/install-Z-selinux
 * tests/ls/ls-misc
 * tests/ls/stat-free-symlinks
 * tests/misc/close-stdout
-* tests/misc/comm
 * tests/misc/nohup
 * tests/misc/numfmt - https://github.com/uutils/coreutils/issues/7219 / https://github.com/uutils/coreutils/issues/7221
+* tests/misc/selinux
 * tests/misc/stdbuf - https://github.com/uutils/coreutils/issues/7072
 * tests/misc/tee - https://github.com/uutils/coreutils/issues/7073
 * tests/misc/time-style
 * tests/misc/tsort - https://github.com/uutils/coreutils/issues/7074
+* tests/misc/usage_vs_getopt
 * tests/misc/write-errors
-* tests/mv/hard-link-1
+* tests/mkdir/restorecon
 * tests/mv/mv-special-1 - https://github.com/uutils/coreutils/issues/7076
-* tests/mv/part-fail
-* tests/mv/part-hardlink
-* tests/od/od-N
 * tests/od/od-float
-* tests/printf/printf-quote
-* tests/ptx/ptx-overrun
 * tests/ptx/ptx
-* tests/rm/empty-inacc - https://github.com/uutils/coreutils/issues/7033
-* tests/rm/ir-1
+* tests/ptx/ptx-overrun
 * tests/rm/one-file-system - https://github.com/uutils/coreutils/issues/7011
 * tests/rm/rm1
-* tests/rm/rm2
 * tests/shred/shred-passes
+* tests/sort/sort
 * tests/sort/sort-continue
 * tests/sort/sort-debug-keys
 * tests/sort/sort-debug-warn
-* tests/sort/sort-files0-from
 * tests/sort/sort-float
 * tests/sort/sort-h-thousands-sep
 * tests/sort/sort-merge-fdlimit
 * tests/sort/sort-month
-* tests/sort/sort
-* tests/stat/stat-nanoseconds
 * tests/tac/tac-2-nonseekable
-* tests/tail/end-of-device
+* tests/tail/follow-name
 * tests/tail/follow-stdin
+* tests/tail/inotify-dir-recreate
 * tests/tail/inotify-rotate-resources
+* tests/tail/pid-pipe
 * tests/tail/symlink
-* tests/touch/obsolescent
+* tests/tail/tail
+* tests/timeout/timeout
 * tests/tty/tty-eof
