@@ -9,9 +9,11 @@ Don't exit with error code if all failing tests are in the ignore-intermittent.t
 import argparse
 import json
 import os
+import re
 import sys
 
 from utils import flatten_test_results, load_ignore_list
+
 
 def load_existing_annotations(file_path):
     """Load existing annotations and header from why-error.md."""
@@ -20,16 +22,20 @@ def load_existing_annotations(file_path):
     if not os.path.exists(file_path):
         return header_lines, annotations
 
+    annotation_pattern = re.compile(r"^\*\s+([^\s]+)\s*(.*)")
+
     with open(file_path, "r") as f:
         found_first_annotation = False
         for line in f:
             sline = line.strip()
-            if sline.startswith("* "):
+            match = annotation_pattern.match(sline)
+            if match:
                 found_first_annotation = True
-                parts = sline[2:].split(" ", 1)
-                test_path = parts[0]
-                if len(parts) > 1:
-                    annotations[test_path] = parts[1]
+                test_path, annotation = match.groups()
+                # Remove any text between asterisks (e.g., *INTERMITTENT*)
+                annotation = re.sub(r'\s*\*[^*]*\*', '', annotation).strip()
+                if annotation:
+                    annotations[test_path] = annotation
             elif not found_first_annotation:
                 header_lines.append(line)
     return header_lines, annotations
@@ -75,7 +81,7 @@ def main():
     failing_tests = {test: status for test, status in flat.items() if status in ("FAIL", "ERROR")}
 
     for test in ignore_list:
-        failing_tests[test] = "IGNORED"
+        failing_tests[test] = "INTERMITTENT"
 
     output_file_path = os.path.join(script_dir, "why-error.md")
 
@@ -85,11 +91,16 @@ def main():
         for line in header_lines:
             f.write(line)
         for test_path, status in sorted(failing_tests.items()):
+            out = [ test_path ]
+
+            if status == "INTERMITTENT" or status == "ERROR":
+                out += [ f"*{status}*" ]
+
             annotation = existing_annotations.get(test_path, "")
             if annotation:
-                f.write(f"* {test_path} {annotation}\n")
-            else:
-                f.write(f"* {test_path}\n")
+                out += [ annotation ]
+
+            f.write(f"* {" ".join(out)}\n")
 
     print(f"Generated {output_file_path}")
 

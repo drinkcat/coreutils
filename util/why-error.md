@@ -28,11 +28,11 @@ results, then `util/generate_why.py`.
 * tests/misc/nohup
 * tests/misc/numfmt - https://github.com/uutils/coreutils/issues/7219 / https://github.com/uutils/coreutils/issues/7221
 * tests/misc/selinux
-* tests/misc/stdbuf - https://github.com/uutils/coreutils/issues/7072
-* tests/misc/tee - https://github.com/uutils/coreutils/issues/7073
+* tests/misc/stdbuf *INTERMITTENT* - https://github.com/uutils/coreutils/issues/7072
+* tests/misc/tee *INTERMITTENT* - https://github.com/uutils/coreutils/issues/7073
 * tests/misc/time-style
 * tests/misc/tsort - https://github.com/uutils/coreutils/issues/7074
-* tests/misc/usage_vs_getopt
+* tests/misc/usage_vs_getopt *INTERMITTENT*
 * tests/misc/write-errors
 * tests/mkdir/restorecon
 * tests/mv/mv-special-1 - https://github.com/uutils/coreutils/issues/7076
@@ -40,7 +40,7 @@ results, then `util/generate_why.py`.
 * tests/ptx/ptx
 * tests/ptx/ptx-overrun
 * tests/rm/one-file-system - https://github.com/uutils/coreutils/issues/7011
-* tests/rm/rm1
+* tests/rm/rm1 *INTERMITTENT*
 * tests/shred/shred-passes
 * tests/sort/sort
 * tests/sort/sort-continue
@@ -53,10 +53,10 @@ results, then `util/generate_why.py`.
 * tests/tac/tac-2-nonseekable
 * tests/tail/follow-name
 * tests/tail/follow-stdin
-* tests/tail/inotify-dir-recreate
+* tests/tail/inotify-dir-recreate *INTERMITTENT*
 * tests/tail/inotify-rotate-resources
 * tests/tail/pid-pipe
 * tests/tail/symlink
 * tests/tail/tail
-* tests/timeout/timeout
+* tests/timeout/timeout *INTERMITTENT*
 * tests/tty/tty-eof
