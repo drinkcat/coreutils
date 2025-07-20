@@ -40,6 +40,31 @@ def load_existing_annotations(file_path):
                 header_lines.append(line)
     return header_lines, annotations
 
+
+def generate_why_file(script_dir, output_file, tests):
+    """Generate the why-*.md file from the given data."""
+    output_file_path = os.path.join(script_dir, output_file)
+
+    header_lines, existing_annotations = load_existing_annotations(output_file_path)
+
+    with open(output_file_path, "w") as f:
+        for line in header_lines:
+            f.write(line)
+        for test_path, status in sorted(tests.items()):
+            out = [test_path]
+
+            if status == "INTERMITTENT" or status == "ERROR":
+                out += [f"*{status}*"]
+
+            annotation = existing_annotations.get(test_path, "")
+            if annotation:
+                out += [annotation]
+
+            f.write(f"* {' '.join(out)}\n")
+
+    print(f"Generated {output_file_path}")
+
+
 def main():
     script_dir = os.path.dirname(__file__)
 
@@ -79,30 +104,15 @@ def main():
     flat = flatten_test_results(results)
 
     failing_tests = {test: status for test, status in flat.items() if status in ("FAIL", "ERROR")}
-
     for test in ignore_list:
         failing_tests[test] = "INTERMITTENT"
 
-    output_file_path = os.path.join(script_dir, "why-error.md")
+    skipped_tests = {test: status for test, status in flat.items() if status == "SKIP"}
+    for test in ignore_list:
+        skipped_tests[test] = "INTERMITTENT"
 
-    header_lines, existing_annotations = load_existing_annotations(output_file_path)
-
-    with open(output_file_path, "w") as f:
-        for line in header_lines:
-            f.write(line)
-        for test_path, status in sorted(failing_tests.items()):
-            out = [ test_path ]
-
-            if status == "INTERMITTENT" or status == "ERROR":
-                out += [ f"*{status}*" ]
-
-            annotation = existing_annotations.get(test_path, "")
-            if annotation:
-                out += [ annotation ]
-
-            f.write(f"* {" ".join(out)}\n")
-
-    print(f"Generated {output_file_path}")
+    generate_why_file(script_dir, "why-error.md", failing_tests)
+    generate_why_file(script_dir, "why-skip.md", skipped_tests)
 
     return 0
 

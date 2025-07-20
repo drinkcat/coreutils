@@ -6,50 +6,42 @@ results, then `util/generate_why.py`.
 
 <!-- spell-checker: disable -->
 
-* tail-2/inotify-race - skipped test: breakpoint not hit
-* tests/cp/cp-a-selinux - this system lacks SELinux support
 * tests/cp/cp-mv-enotsup-xattr - insufficient mount/ext2 support
 * tests/cp/nfs-removal-race - LD_PRELOAD was ineffective?
-* tests/cp/no-ctx - this system lacks SELinux support
-* tests/cp/sparse-2 - insufficient SEEK_DATA support
-* tests/cp/sparse-extents-2 - insufficient SEEK_DATA support
-* tests/cp/sparse-extents - insufficient SEEK_DATA support
-* tests/cp/sparse-perf - insufficient SEEK_DATA support
-* tests/dd/direct - 512 byte aligned O_DIRECT is not supported on this (file) system
+* tests/csplit/csplit-io-err
 * tests/df/no-mtab-status - internal test failure: maybe LD_PRELOAD doesn't work?
 * tests/df/problematic-chars - insufficient mount/ext2 support
 * tests/df/skip-duplicates - internal test failure: maybe LD_PRELOAD doesn't work?
 * tests/df/skip-rootfs - no rootfs in mtab
 * tests/du/bigtime - file system cannot represent big timestamps
-* tests/id/context - this system lacks SELinux support
+* tests/env/env-signal-handler - trapping SIGPIPE is not supported
 * tests/id/gnu-zero-uids - not running on GNU/Hurd
-* tests/id/no-context - this system lacks SELinux support
 * tests/id/smack - this system lacks SMACK support
-* tests/install/install-C-selinux - this system lacks SELinux support
-* tests/install/install-Z-selinux - this system lacks SELinux support
-* tests/misc/chcon - this system lacks SELinux support
+* tests/ls/ls-time - skipped test: /usr/bin/touch -m -d '1998-01-15 23:00' didn't work
 * tests/misc/coreutils - multicall binary is disabled
-* tests/misc/csplit-heap - this shell lacks ulimit support
-* tests/misc/env-signal-handler - trapping SIGPIPE is not supported
-* tests/misc/ls-time - skipped test: /usr/bin/touch -m -d '1998-01-15 23:00' didn't work
-* tests/misc/printf-surprise - trapping SIGPIPE is not supported
-* tests/misc/selinux - this system lacks SELinux support
-* tests/misc/seq-epipe - trapping SIGPIPE is not supported
-* tests/misc/sort-h-thousands-sep - The Swedish locale with blank thousands separator is unavailable.
-* tests/misc/stty-invalid - requires controlling input terminal
-* tests/misc/stty-pairs - requires controlling input terminal
-* tests/misc/stty-row-col - can't get window size
-* tests/misc/stty - requires controlling input terminal
-* tests/misc/tac-continue - FULL_PARTITION_TMPDIR not defined
-* tests/misc/timeout-group - timeout returned 142. SIGALRM not handled?
-* tests/misc/xattr - failed to set xattr of file
-* tests/mkdir/restorecon - this system lacks SELinux support
-* tests/mkdir/selinux - this system lacks SELinux support
+* tests/misc/stdbuf *INTERMITTENT*
+* tests/misc/tee *INTERMITTENT*
+* tests/misc/usage_vs_getopt *INTERMITTENT*
 * tests/mkdir/smack-no-root - this system lacks SMACK support
 * tests/mkdir/smack-root - this system lacks SMACK support
 * tests/mkdir/writable-under-readonly - temporarily disabled
 * tests/mv/hardlink-case - failed to create hfs file system
+* tests/mv/i-3
+* tests/pr/pr-tests
+* tests/printf/printf-surprise - trapping SIGPIPE is not supported
+* tests/rm/fail-eperm
 * tests/rm/r-root - internal test failure: maybe LD_PRELOAD doesn't work?
 * tests/rm/rm-readdir-fail - internal test failure: maybe LD_PRELOAD doesn't work?
-* tests/tail-2/inotify-race2 - skipped test: breakpoint not hit
-* tests/tail-2/pipe-f - trapping SIGPIPE is not supported
+* tests/rm/rm1 *INTERMITTENT*
+* tests/seq/seq-epipe - trapping SIGPIPE is not supported
+* tests/stty/stty - requires controlling input terminal
+* tests/stty/stty-invalid - requires controlling input terminal
+* tests/stty/stty-pairs - requires controlling input terminal
+* tests/stty/stty-row-col - can't get window size
+* tests/tac/tac-continue - FULL_PARTITION_TMPDIR not defined
+* tests/tail/inotify-dir-recreate *INTERMITTENT*
+* tests/tail/inotify-race - skipped test: breakpoint not hit
+* tests/tail/inotify-race2 - skipped test: breakpoint not hit
+* tests/tail/pipe-f - trapping SIGPIPE is not supported
+* tests/timeout/timeout *INTERMITTENT*
+* tests/timeout/timeout-group - timeout returned 142. SIGALRM not handled?
