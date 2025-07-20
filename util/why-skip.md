@@ -1,94 +1,71 @@
 # spell-checker:ignore epipe readdir restorecon SIGALRM capget bigtime rootfs enotsup
 
-= trapping SIGPIPE is not supported =
-* tests/tail-2/pipe-f.sh
-* tests/misc/seq-epipe.sh
-* tests/misc/printf-surprise.sh
-* tests/misc/env-signal-handler.sh
+* tests/tail-2/pipe-f.sh - trapping SIGPIPE is not supported
+* tests/misc/seq-epipe.sh - trapping SIGPIPE is not supported
+* tests/misc/printf-surprise.sh - trapping SIGPIPE is not supported
+* tests/misc/env-signal-handler.sh - trapping SIGPIPE is not supported
 
-= skipped test: breakpoint not hit =
-* tests/tail-2/inotify-race2.sh
-* tail-2/inotify-race.sh
+* tests/tail-2/inotify-race2.sh - skipped test: breakpoint not hit
+* tail-2/inotify-race.sh - skipped test: breakpoint not hit
 
-= internal test failure: maybe LD_PRELOAD doesn't work? =
-* tests/rm/rm-readdir-fail.sh
-* tests/rm/r-root.sh
-* tests/df/skip-duplicates.sh
-* tests/df/no-mtab-status.sh
+* tests/rm/rm-readdir-fail.sh - internal test failure: maybe LD_PRELOAD doesn't work?
+* tests/rm/r-root.sh - internal test failure: maybe LD_PRELOAD doesn't work?
+* tests/df/skip-duplicates.sh - internal test failure: maybe LD_PRELOAD doesn't work?
+* tests/df/no-mtab-status.sh - internal test failure: maybe LD_PRELOAD doesn't work?
 
-= LD_PRELOAD was ineffective? =
-* tests/cp/nfs-removal-race.sh
+* tests/cp/nfs-removal-race.sh - LD_PRELOAD was ineffective?
 
-= failed to create hfs file system =
-* tests/mv/hardlink-case.sh
+* tests/mv/hardlink-case.sh - failed to create hfs file system
 
-= temporarily disabled =
-* tests/mkdir/writable-under-readonly.sh
+* tests/mkdir/writable-under-readonly.sh - temporarily disabled
 
-= this system lacks SMACK support =
-* tests/mkdir/smack-root.sh
-* tests/mkdir/smack-no-root.sh
-* tests/id/smack.sh
+* tests/mkdir/smack-root.sh - this system lacks SMACK support
+* tests/mkdir/smack-no-root.sh - this system lacks SMACK support
+* tests/id/smack.sh - this system lacks SMACK support
 
-= this system lacks SELinux support =
-* tests/mkdir/selinux.sh
-* tests/mkdir/restorecon.sh
-* tests/misc/selinux.sh
-* tests/misc/chcon.sh
-* tests/install/install-Z-selinux.sh
-* tests/install/install-C-selinux.sh
-* tests/id/no-context.sh
-* tests/id/context.sh
-* tests/cp/no-ctx.sh
-* tests/cp/cp-a-selinux.sh
+* tests/mkdir/selinux.sh - this system lacks SELinux support
+* tests/mkdir/restorecon.sh - this system lacks SELinux support
+* tests/misc/selinux.sh - this system lacks SELinux support
+* tests/misc/chcon.sh - this system lacks SELinux support
+* tests/install/install-Z-selinux.sh - this system lacks SELinux support
+* tests/install/install-C-selinux.sh - this system lacks SELinux support
+* tests/id/no-context.sh - this system lacks SELinux support
+* tests/id/context.sh - this system lacks SELinux support
+* tests/cp/no-ctx.sh - this system lacks SELinux support
+* tests/cp/cp-a-selinux.sh - this system lacks SELinux support
 
-= failed to set xattr of file =
-* tests/misc/xattr.sh
+* tests/misc/xattr.sh - failed to set xattr of file
 
-= timeout returned 142. SIGALRM not handled? =
-* tests/misc/timeout-group.sh
+* tests/misc/timeout-group.sh - timeout returned 142. SIGALRM not handled?
 
-= FULL_PARTITION_TMPDIR not defined =
-* tests/misc/tac-continue.sh
+* tests/misc/tac-continue.sh - FULL_PARTITION_TMPDIR not defined
 
-= can't get window size =
-* tests/misc/stty-row-col.sh
+* tests/misc/stty-row-col.sh - can't get window size
 
-= The Swedish locale with blank thousands separator is unavailable. =
-* tests/misc/sort-h-thousands-sep.sh
+* tests/misc/sort-h-thousands-sep.sh - The Swedish locale with blank thousands separator is unavailable.
 
-= this shell lacks ulimit support =
-* tests/misc/csplit-heap.sh
+* tests/misc/csplit-heap.sh - this shell lacks ulimit support
 
-= multicall binary is disabled =
-* tests/misc/coreutils.sh
+* tests/misc/coreutils.sh - multicall binary is disabled
 
-= not running on GNU/Hurd =
-* tests/id/gnu-zero-uids.sh
+* tests/id/gnu-zero-uids.sh - not running on GNU/Hurd
 
-= file system cannot represent big timestamps =
-* tests/du/bigtime.sh
+* tests/du/bigtime.sh - file system cannot represent big timestamps
 
-= no rootfs in mtab =
-* tests/df/skip-rootfs.sh
+* tests/df/skip-rootfs.sh - no rootfs in mtab
 
-= insufficient mount/ext2 support =
-* tests/df/problematic-chars.sh
-* tests/cp/cp-mv-enotsup-xattr.sh
+* tests/df/problematic-chars.sh - insufficient mount/ext2 support
+* tests/cp/cp-mv-enotsup-xattr.sh - insufficient mount/ext2 support
 
-= 512 byte aligned O_DIRECT is not supported on this (file) system =
-* tests/dd/direct.sh
+* tests/dd/direct.sh - 512 byte aligned O_DIRECT is not supported on this (file) system
 
-= skipped test: /usr/bin/touch -m -d '1998-01-15 23:00' didn't work =
-* tests/misc/ls-time.sh
+* tests/misc/ls-time.sh - skipped test: /usr/bin/touch -m -d '1998-01-15 23:00' didn't work
 
-= requires controlling input terminal =
-* tests/misc/stty-pairs.sh
-* tests/misc/stty.sh
-* tests/misc/stty-invalid.sh
+* tests/misc/stty-pairs.sh - requires controlling input terminal
+* tests/misc/stty.sh - requires controlling input terminal
+* tests/misc/stty-invalid.sh - requires controlling input terminal
 
-= insufficient SEEK_DATA support =
-* tests/cp/sparse-perf.sh
-* tests/cp/sparse-extents.sh
-* tests/cp/sparse-extents-2.sh
-* tests/cp/sparse-2.sh
+* tests/cp/sparse-perf.sh - insufficient SEEK_DATA support
+* tests/cp/sparse-extents.sh - insufficient SEEK_DATA support
+* tests/cp/sparse-extents-2.sh - insufficient SEEK_DATA support
+* tests/cp/sparse-2.sh - insufficient SEEK_DATA support
