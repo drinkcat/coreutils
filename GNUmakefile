@@ -320,10 +320,10 @@ else
 endif
 endif
 
-build-coreutils:
+build-coreutils: locales
 	${CARGO} build ${CARGOFLAGS} --features "${EXES} $(BUILD_SPEC_FEATURE)" ${PROFILE_CMD} --no-default-features
 
-build: build-coreutils build-pkgs locales
+build: build-coreutils build-pkgs
 
 $(foreach test,$(filter-out $(SKIP_UTILS),$(PROGS)),$(eval $(call TEST_BUSYBOX,$(test))))
 
