@@ -114,19 +114,6 @@ pub use libc::statfs as statfs_fn;
 ))]
 pub use libc::statvfs as statfs_fn;
 
-pub trait BirthTime {
-    fn birth(&self) -> Option<(u64, u32)>;
-}
-
-impl BirthTime for Metadata {
-    fn birth(&self) -> Option<(u64, u32)> {
-        self.created()
-            .ok()
-            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-            .map(|e| (e.as_secs(), e.subsec_nanos()))
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 pub enum MetadataTimeField {
     Modification,
