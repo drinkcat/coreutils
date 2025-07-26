@@ -128,8 +128,20 @@ pub enum MetadataTimeField {
 pub fn metadata_get_time(md: &Metadata, md_time: MetadataTimeField) -> Option<SystemTime> {
     match md_time {
         MetadataTimeField::Change => {
-            // TODO: This is incorrect for negative timestamps.
-            Some(UNIX_EPOCH + Duration::new(md.ctime() as u64, md.ctime_nsec() as u32))
+            let mut st = UNIX_EPOCH;
+            let (secs, nsecs) = (md.ctime(), md.ctime_nsec());
+            if secs >= 0 {
+                st += Duration::from_secs(secs as u64);
+            } else {
+                st -= Duration::from_secs(-secs as u64);
+            }
+            if nsecs >= 0 {
+                st += Duration::from_nanos(nsecs as u64);
+            } else {
+                // Probably never the case, but cover just in case.
+                st -= Duration::from_nanos(-nsecs as u64);
+            }
+            Some(st)
         }
         MetadataTimeField::Modification => md.modified().ok(),
         MetadataTimeField::Access => md.accessed().ok(),
