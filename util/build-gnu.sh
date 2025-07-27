@@ -135,7 +135,7 @@ cd -
 "${MAKE}" PROFILE="${UU_MAKE_PROFILE}" CARGOFLAGS="${CARGO_FEATURE_FLAGS}"
 touch g
 echo "stat with selinux support"
-./target/debug/stat -c%C g || true
+./target/${UU_MAKE_PROFILE}/stat -c%C g || true
 
 
 cp "${UU_BUILD_DIR}/install" "${UU_BUILD_DIR}/ginstall" # The GNU tests rename this script before running, to avoid confusion with the make target
