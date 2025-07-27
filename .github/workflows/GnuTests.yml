@@ -2,7 +2,7 @@ name: GnuTests
 
 # spell-checker:ignore (abbrev/names) CodeCov gnulib GnuTests Swatinem
 # spell-checker:ignore (jargon) submodules devel
-# spell-checker:ignore (libs/utils) autopoint chksum getenforce gperf lcov libexpect limactl pyinotify setenforce shopt texinfo valgrind libattr libcap taiki-e
+# spell-checker:ignore (libs/utils) autopoint chksum getenforce gperf lcov libexpect limactl pyinotify sccache setenforce shopt texinfo valgrind libattr libcap taiki-e
 # spell-checker:ignore (options) Ccodegen Coverflow Cpanic Zpanic
 # spell-checker:ignore (people) Dawid Dziurla * dawidd dtolnay
 # spell-checker:ignore (vars) FILESET SUBDIRS XPASS
@@ -35,6 +35,9 @@ jobs:
   native:
     name: Run GNU tests (native)
     runs-on: ubuntu-24.04
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
     steps:
     #### Get the code, setup cache
     - name: Checkout code (uutils)
@@ -72,6 +75,8 @@ jobs:
         ## Install dependencies
         sudo apt-get update
         sudo apt-get install -y autoconf autopoint bison texinfo gperf gcc g++ gdb python3-pyinotify jq valgrind libexpect-perl libacl1-dev libattr1-dev libcap-dev libselinux1-dev attr quilt
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
     - name: Add various locales
       shell: bash
       run: |
@@ -100,7 +105,7 @@ jobs:
       run: |
         ## Build binaries
         cd 'uutils'
-        bash util/build-gnu.sh --release-build
+        CC="sccache gcc" bash util/build-gnu.sh --release-build
 
     ### Run tests as user
     - name: Run GNU tests
@@ -196,6 +201,10 @@ jobs:
       with:
         path: ~/.cache/lima
         key: lima-${{ steps.lima-actions-setup.outputs.version }}
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+      with:
+        disable_annotations: true
     - name: Start Fedora VM with SELinux
       run: limactl start --plain --name=default --cpus=4 --disk=40 --memory=8 --network=lima:user-v2 template://fedora
     - name: Setup SSH
@@ -227,11 +236,24 @@ jobs:
     - name: Copy the sources to VM
       run: |
         rsync -a -e ssh . lima-default:~/work/
+    - name: Setup sccache in VM
+      run: |
+        # sccache is portable, just move it over
+        rsync -a -e ssh $(command -v sccache) lima-default:~/sccache
+        lima bash -c 'sudo mv ~/sccache /bin/sccache'
 
     ### Build
     - name: Build binaries
       run: |
-        lima bash -c "cd ~/work/uutils/ && bash util/build-gnu.sh --release-build"
+        lima bash -c '\
+          export ACTIONS_RESULTS_URL="${{ env.ACTIONS_RESULTS_URL }}"
+          export ACTIONS_RUNTIME_TOKEN="${{ env.ACTIONS_RUNTIME_TOKEN }}"
+          export ACTIONS_CACHE_SERVICE_V2="on"
+          export SCCACHE_GHA_ENABLED="true"
+          export RUSTC_WRAPPER="sccache"
+          export CC="sccache gcc"
+          cd ~/work/uutils/ && bash util/build-gnu.sh --release-build
+          sccache --show-stats'
 
     ### Run tests as user
     - name: Generate SELinux tests list
