@@ -215,8 +215,10 @@ jobs:
         lima sudo touch /var/test_selinux/test_file
         lima sudo chcon -t etc_t /var/test_selinux/test_file
         lima ls -Z /var/test_selinux/test_file  # Verify context
-    - name: Copy cargo cache to VM
-      run: rsync -a -e ssh ~/.cargo/ lima-default:~/.cargo/
+    - name: Copy rustup and cargo cache to VM
+      run: |
+        rsync -a -e ssh ~/.rustup/ lima-default:~/.rustup/
+        rsync -a -e ssh ~/.cargo/ lima-default:~/.cargo/
     - name: Install dependencies in VM
       run: |
         lima sudo dnf -y update
