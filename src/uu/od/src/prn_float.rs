@@ -14,13 +14,13 @@ use crate::formatter_item_info::{FormatWriter, FormatterItemInfo};
 
 pub static FORMAT_ITEM_F16: FormatterItemInfo = FormatterItemInfo {
     byte_size: 2,
-    print_width: 10,
+    print_width: 16,
     formatter: FormatWriter::FloatWriter(format_item_f16),
 };
 
 pub static FORMAT_ITEM_F32: FormatterItemInfo = FormatterItemInfo {
     byte_size: 4,
-    print_width: 15,
+    print_width: 16,
     formatter: FormatWriter::FloatWriter(format_item_f32),
 };
 
@@ -32,7 +32,7 @@ pub static FORMAT_ITEM_F64: FormatterItemInfo = FormatterItemInfo {
 
 pub static FORMAT_ITEM_BF16: FormatterItemInfo = FormatterItemInfo {
     byte_size: 2,
-    print_width: 15,
+    print_width: 16,
     formatter: FormatWriter::BFloatWriter(format_item_bf16),
 };
 
@@ -90,13 +90,13 @@ pub fn format_item_bf16(f: f64) -> String {
 }
 
 fn format_f16(f: f16) -> String {
-    format_extended_big_decimal(&f64::from(f).into(), 9, 4)
+    format_extended_big_decimal(&f64::from(f).into(), 15, 8)
 }
 
 /// formats float with 8 significant digits, eg 12345678 or -1.2345678e+12
 /// always returns a string of 14 characters
 fn format_f32(f: f32) -> String {
-    let width: usize = 14;
+    let width: usize = 15;
     let precision: usize = 8;
 
     if f.classify() == FpCategory::Subnormal {
