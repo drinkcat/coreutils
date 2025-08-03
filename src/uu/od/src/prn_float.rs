@@ -90,7 +90,7 @@ pub fn format_item_bf16(f: f64) -> String {
 }
 
 fn format_f16(f: f16) -> String {
-    format_float(f64::from(f), 9, 4)
+    format_extended_big_decimal(&f64::from(f).into(), 9, 4)
 }
 
 /// formats float with 8 significant digits, eg 12345678 or -1.2345678e+12
@@ -103,12 +103,12 @@ fn format_f32(f: f32) -> String {
         // subnormal numbers will be normal as f64, so will print with a wrong precision
         format_f32_exp(f, width) // subnormal numbers
     } else {
-        format_float(f64::from(f), width, precision)
+        format_extended_big_decimal(&f64::from(f).into(), width, precision)
     }
 }
 
 fn format_f64(f: f64) -> String {
-    format_float(f, 24, 17)
+    format_extended_big_decimal(&f.into(), 24, 17)
 }
 
 fn format_float(f: f64, width: usize, precision: usize) -> String {
