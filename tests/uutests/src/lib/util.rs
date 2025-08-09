@@ -1966,6 +1966,9 @@ impl UCommand {
         log_info("run", self.to_string());
         let child = command.spawn().unwrap();
 
+        println!("HACK: Add 50ms sleep!");
+        thread::sleep(Duration::from_millis(50));
+
         let mut child = UChild::from(self, child, captured_stdout, captured_stderr, stdin_pty);
 
         if let Some(input) = self.bytes_into_stdin.take() {
