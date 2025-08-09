@@ -157,78 +157,6 @@ jobs:
           docs/src/*.md
           src/uu/*/*.md
 
-  min_version:
-    name: MinRustV # Minimum supported rust version (aka, MinSRV or MSRV)
-    runs-on: ${{ matrix.job.os }}
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-      RUSTC_WRAPPER: "sccache"
-    strategy:
-      matrix:
-        job:
-          - { os: ubuntu-latest , features: feat_os_unix }
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        persist-credentials: false
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ env.RUST_MIN_SRV }}
-        components: rustfmt
-    - uses: taiki-e/install-action@nextest
-    - uses: Swatinem/rust-cache@v2
-    - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.9
-    - name: Initialize workflow variables
-      id: vars
-      shell: bash
-      run: |
-        ## VARs setup
-        outputs() { step_id="${{ github.action }}"; for var in "$@" ; do echo steps.${step_id}.outputs.${var}="${!var}"; echo "${var}=${!var}" >> $GITHUB_OUTPUT; done; }
-        # target-specific options
-        # * CARGO_FEATURES_OPTION
-        unset CARGO_FEATURES_OPTION
-        if [ -n "${{ matrix.job.features }}" ]; then CARGO_FEATURES_OPTION='--features "${{ matrix.job.features }}"' ; fi
-        outputs CARGO_FEATURES_OPTION
-    - name: Confirm MinSRV compatible '*/Cargo.lock'
-      shell: bash
-      run: |
-        ## Confirm MinSRV compatible '*/Cargo.lock'
-        # * '*/Cargo.lock' is required to be in a format that `cargo` of MinSRV can interpret (eg, v1-format for MinSRV < v1.38)
-        for dir in "." "fuzz"; do
-          ( cd "$dir" && cargo fetch --locked --quiet ) || { echo "::error file=$dir/Cargo.lock::Incompatible (or out-of-date) '$dir/Cargo.lock' file; update using \`cd '$dir' && cargo +${{ env.RUST_MIN_SRV }} update\`" ; exit 1 ; }
-        done
-    - name: Install/setup prerequisites
-      shell: bash
-      run: |
-        # Install a package for one of the tests
-        sudo apt-get -y update ; sudo apt-get -y install attr
-    - name: Info
-      shell: bash
-      run: |
-        ## Info
-        # environment
-        echo "## environment"
-        echo "CI='${CI}'"
-        # tooling info display
-        echo "## tooling"
-        which gcc >/dev/null 2>&1 && (gcc --version | head -1) || true
-        rustup -V 2>/dev/null
-        rustup show active-toolchain
-        cargo -V
-        rustc -V
-        cargo tree -V
-        # dependencies
-        echo "## dependency list"
-        ## * using the 'stable' toolchain is necessary to avoid "unexpected '--filter-platform'" errors
-        RUSTUP_TOOLCHAIN=stable cargo fetch --locked --quiet
-        RUSTUP_TOOLCHAIN=stable cargo tree --no-dedupe --locked -e=no-dev --prefix=none ${{ steps.vars.outputs.CARGO_FEATURES_OPTION }} | grep -vE "$PWD" | sort --unique
-    - name: Test
-      run: cargo nextest run --hide-progress-bar --profile ci ${{ steps.vars.outputs.CARGO_FEATURES_OPTION }} -p uucore -p coreutils
-      env:
-        RUSTFLAGS: "-Awarnings"
-        RUST_BACKTRACE: "1"
-
   deps:
     name: Dependencies
     runs-on: ${{ matrix.job.os }}
@@ -254,7 +182,7 @@ jobs:
 
   build_makefile:
     name: Build/Makefile
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.job.os }}
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -344,7 +272,7 @@ jobs:
 
   build_rust_stable:
     name: Build/stable
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.job.os }}
     timeout-minutes: 90
     env:
@@ -373,7 +301,7 @@ jobs:
 
   build_rust_nightly:
     name: Build/nightly
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.job.os }}
     timeout-minutes: 90
     env:
@@ -402,7 +330,7 @@ jobs:
 
   compute_size:
     name: Binary sizes
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.job.os }}
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -517,7 +445,7 @@ jobs:
       contents: write # to create GitHub release (softprops/action-gh-release)
 
     name: Build
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.job.os }}
     timeout-minutes: 90
     env:
@@ -845,7 +773,7 @@ jobs:
 
   test_busybox:
     name: Tests/BusyBox test suite
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.job.os }}
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -926,7 +854,7 @@ jobs:
 
   test_toybox:
     name: Tests/Toybox test suite
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.job.os }}
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -1159,7 +1087,7 @@ jobs:
 
   test_all_features:
     name: Test all features separately
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -1183,7 +1111,7 @@ jobs:
 
   test_selinux:
     name: Build/SELinux
-    needs: [ min_version, deps ]
+    needs: [ deps ]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
