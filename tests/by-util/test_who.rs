@@ -35,7 +35,8 @@ fn test_count() {
 fn test_boot() {
     let ts = TestScenario::new(util_name!());
     for opt in ["-b", "--boot", "--b"] {
-        let expected_stdout = unwrap_or_return!(expected_result(&ts, &[opt])).stdout_move_str();
+        let expected_stdout =
+            unwrap_or_return!(expected_result(&ts, &[opt])).stdout_move_str() + "hello";
         ts.ucmd().arg(opt).succeeds().stdout_is(expected_stdout);
     }
 }

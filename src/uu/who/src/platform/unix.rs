@@ -187,6 +187,7 @@ fn current_tty() -> String {
 impl Who {
     #[allow(clippy::cognitive_complexity)]
     fn exec(&mut self) -> UResult<()> {
+        println!("Who::exec");
         let run_level_chk = |_record: i16| {
             #[cfg(not(target_os = "linux"))]
             return false;
@@ -201,6 +202,7 @@ impl Who {
             utmpx::DEFAULT_FILE
         };
         if self.short_list {
+            println!("Who::short");
             let users = Utmpx::iter_all_records_from(f)
                 .filter(Utmpx::is_user_process)
                 .map(|ut| ut.user())
@@ -208,6 +210,7 @@ impl Who {
             println!("{}", users.join(" "));
             println!("{}", translate!("who-user-count", "count" => users.len()));
         } else {
+            println!("Who::!short");
             let records = Utmpx::iter_all_records_from(f);
 
             if self.include_heading {
@@ -220,7 +223,10 @@ impl Who {
             };
 
             for ut in records {
+                println!("Who::records");
+
                 if !self.my_line_only || cur_tty == ut.tty_device() {
+                    println!("Who::!my || tty");
                     if self.need_users && ut.is_user_process() {
                         self.print_user(&ut)?;
                     } else if self.need_runlevel && run_level_chk(ut.record_type()) {
@@ -228,6 +234,7 @@ impl Who {
                             self.print_runlevel(&ut);
                         }
                     } else if self.need_boottime && ut.record_type() == utmpx::BOOT_TIME {
+                        println!("boottime");
                         self.print_boottime(&ut);
                     } else if self.need_clockchange && ut.record_type() == utmpx::NEW_TIME {
                         self.print_clockchange(&ut);
