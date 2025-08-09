@@ -223,7 +223,7 @@ impl Who {
             };
 
             for ut in records {
-                println!("Who::records");
+                println!("Who::records {ut:?}");
 
                 if !self.my_line_only || cur_tty == ut.tty_device() {
                     println!("Who::!my || tty");

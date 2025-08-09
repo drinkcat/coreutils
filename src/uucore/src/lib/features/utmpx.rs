@@ -175,6 +175,7 @@ mod ut {
 }
 
 /// A login record
+#[derive(Debug)]
 pub struct Utmpx {
     inner: utmpx,
 }
